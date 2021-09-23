@@ -9,6 +9,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.content.res.ResourcesCompat;
 import org.json.JSONException;
 
 public class MainActivity extends AppCompatActivity {
@@ -28,6 +29,9 @@ public class MainActivity extends AppCompatActivity {
         mainLayout.setOrientation(LinearLayout.VERTICAL);
 
         contentView=new RelativeLayout(this);
+        int darkGray=ResourcesCompat.getColor(getResources(),R.color.DarkGray,null);
+        contentView.setBackgroundColor(darkGray);
+        getWindow().setStatusBarColor(darkGray);
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams( ViewGroup.LayoutParams.MATCH_PARENT,0,1);
         contentView.setLayoutParams(params);
 
@@ -51,52 +55,48 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0;i<navBtns.length;i++){
                 navBtns[i]=new Button(this);
                 navBtns[i].setLayoutParams(params);
-                navBtns[i].setBackgroundColor(Color.DKGRAY);
+                navBtns[i].setBackgroundColor(Color.TRANSPARENT);
+                navBtns[i].setShadowLayer(0,0,0,Color.TRANSPARENT);
                 navBtns[i].setTextColor(Color.WHITE);
                 navView.addView(navBtns[i]);
         }
         mainBtn=navBtns[0];
         mainBtn.setText("Home");
-        mainBtn.setOnTouchListener(new View.OnTouchListener() {
+        mainBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            public void onClick(View v) {
                 showPage(0);
-                return true;
             }
         });
 //        mainBtn.setCompoundDrawablesWithIntrinsicBounds(null,getDrawable(R.drawable.ic_launcher_foreground),null,null);
         infoBtn=navBtns[1];
         infoBtn.setText("Info");
-        infoBtn.setOnTouchListener(new View.OnTouchListener() {
+        infoBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            public void onClick(View v) {
                 showPage(1);
-                return true;
             }
         });
         aboutBtn=navBtns[2];
         aboutBtn.setText("About");
-        aboutBtn.setOnTouchListener(new View.OnTouchListener() {
+        aboutBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            public void onClick(View v) {
                 showPage(2);
-                return true;
             }
         });
         navBtns[3].setText("debug");
-        navBtns[3].setOnTouchListener(new View.OnTouchListener() {
+        navBtns[3].setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            public void onClick(View v) {
                 showPage(3);
-                return true;
             }
         });
-
-
-        navView.setBackgroundColor(Color.DKGRAY);
+        int lightGray= ResourcesCompat.getColor(getResources(),R.color.LightGray,null);
+        navView.setBackgroundColor(lightGray);
         Window window=getWindow();
-        window.setNavigationBarDividerColor(Color.DKGRAY);
-        window.setNavigationBarColor(Color.DKGRAY);
+        window.setNavigationBarDividerColor(lightGray);
+        window.setNavigationBarColor(lightGray);
         getSupportActionBar().hide();
     }
 

@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createNavBar(){
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT,1);
-        navBtns=new Button[4];
+        navBtns=new Button[3];
         for(int i=0;i<navBtns.length;i++){
                 navBtns[i]=new Button(this);
                 navBtns[i].setLayoutParams(params);
@@ -85,13 +85,13 @@ public class MainActivity extends AppCompatActivity {
                 showPage(2);
             }
         });
-        navBtns[3].setText("debug");
-        navBtns[3].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showPage(3);
-            }
-        });
+//        navBtns[3].setText("debug");
+//        navBtns[3].setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                showPage(3);
+//            }
+//        });
         int lightGray= ResourcesCompat.getColor(getResources(),R.color.LightGray,null);
         navView.setBackgroundColor(lightGray);
         Window window=getWindow();

@@ -1,3 +1,24 @@
 <resources>
     <string name="app_name">Koncentracija Polena</string>
+    <string name="app_description">
+        Android aplikacija za citanje koncentracije polena,
+        Podaci se preuzimaju sa:
+        <a href="https://data.gov.rs/sr/topics/zivotna-sredina">
+            https://data.gov.rs/sr/topics/zivotna-sredina.
+        </a>
+    </string>
+    <string name="volley">
+        Google Volley:
+        <a href="https://github.com/google/volley">
+        https://github.com/google/volley
+    </a></string>
+    <string name="github">
+        <a href="https://github.com/UrosSysPro/Koncentracija-Polena">
+        https://github.com/UrosSysPro/Koncentracija-Polena
+    </a></string>
+    <string name="materialSpinner">
+        Material spinner
+        <a href="https://github.com/jaredrummler/MaterialSpinner">
+        https://github.com/jaredrummler/MaterialSpinner
+    </a></string>
 </resources>

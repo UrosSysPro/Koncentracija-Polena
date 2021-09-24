@@ -12,6 +12,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.jaredrummler.materialspinner.MaterialSpinner;
 import com.uros.koncentracijapolena.tables.Allergen;
+import com.uros.koncentracijapolena.tables.AllergenType;
 import com.uros.koncentracijapolena.tables.Location;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,8 +26,8 @@ public class HomePage extends Page{
     private RequestQueue requestQueue;
     private MaterialSpinner locationsSpinner;
     private Location[] locations;
-    private String[] allergenTypes;
-    private Allergen[][] allergens;
+    private AllergenType[] allergenTypes;
+    private Allergen[] allergens;
     private LinearLayout datePicker;
     private EditText yearEdit,monthEdit,dayEdit;
     private TableLayout infoTable;
@@ -83,44 +84,15 @@ public class HomePage extends Page{
     }
     private void setTables(){
         infoTable=new TableLayout(context);
-        int allergenCount=0;
-        for(int i = 0; i< allergenTypes.length; i++){
-            for(int j = 0; j< allergens[i].length; j++){
-                allergenCount++;
-            }
-        }
-        MainActivity.debug.print(allergenCount+"");
-        concentrationTextViews=new TextView[allergenCount];
-        allergenCount=0;
-        for(int i = 0; i< allergenTypes.length; i++){
-            TableRow tableRow=new TableRow(context);
-            TextView t1=new TextView(context);
-            TextView t2=new TextView(context);
-            t1.setTextColor(Color.WHITE);
-            t2.setTextColor(Color.WHITE);
-            t1.setText(allergenTypes[i]);
-            t2.setText("concentration");
-            tableRow.addView(t1);
-            tableRow.addView(t2);
-            TableRow.LayoutParams params=new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
-            t1.setLayoutParams(params);
-            t2.setLayoutParams(params);
-            infoTable.addView(tableRow);
-            for(int j = 0; j< allergens[i].length; j++,allergenCount++){
-                tableRow=new TableRow(context);
-                t1=new TextView(context);
-                t2=new TextView(context);
-                t1.setTextColor(Color.WHITE);
-                t2.setTextColor(Color.WHITE);
-                t1.setText(allergens[i][j].localName);
-                t2.setText("0");
-                tableRow.addView(t1);
-                tableRow.addView(t2);
-                concentrationTextViews[allergenCount]=t2;
-                params=new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
-                t1.setLayoutParams(params);
-                t2.setLayoutParams(params);
-                infoTable.addView(tableRow);
+        int k=0;
+        for(int i=0;i<allergenTypes.length;i++){
+            addTableRow(allergenTypes[i].name,"concentration");
+            for(int j=0;j<allergens.length;j++){
+                if(allergens[j].typeId==allergenTypes[i].id){
+                    concentrationTextViews[k]=addTableRow(allergens[j].name,"0");
+                    allergens[j].textViewId=k;
+                    k++;
+                }
             }
         }
         infoTable.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -131,13 +103,6 @@ public class HomePage extends Page{
         searchBtn.setText("Search");
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         searchBtn.setLayoutParams(params);
-//        searchBtn.setOnTouchListener(new View.OnTouchListener() {
-//            @Override
-//            public boolean onTouch(View v, MotionEvent event) {
-//                checkUserInput();
-//                return true;
-//            }
-//        });
         searchBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -159,7 +124,22 @@ public class HomePage extends Page{
         });
         view.addView(reloadBtn);
     }
-
+    private TextView addTableRow(String text1,String text2){
+        TableRow tableRow=new TableRow(context);
+        TextView t1=new TextView(context);
+        TextView t2=new TextView(context);
+        t1.setTextColor(Color.WHITE);
+        t2.setTextColor(Color.WHITE);
+        t1.setText(text1);
+        t2.setText(text2);
+        tableRow.addView(t1);
+        tableRow.addView(t2);
+        TableRow.LayoutParams params=new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
+        t1.setLayoutParams(params);
+        t2.setLayoutParams(params);
+        infoTable.addView(tableRow);
+        return t2;
+    }
     //pretraga polena
     public void checkUserInput(){
         if(selectedLocation==-1){
@@ -184,8 +164,7 @@ public class HomePage extends Page{
     }
     private void getPollenAtLocationAndDate(int locationId,int year,int month,int day){
         String url = "http://polen.sepa.gov.rs/api/opendata/pollens/";
-//      ?location=2&date=2019-5-3";
-        url+="?location=";
+//      url+="?location=";
         url+=locationId;
         url=url+"&date="+year+"-"+month+"-"+day;
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
@@ -195,6 +174,9 @@ public class HomePage extends Page{
 //                      pronaci sve id za koncentracije i onda request za svaki id
 //                      pa popuniti tabelu
                         try{
+                            for(int i=0;i<allergens.length;i++){
+                                enterAllergenValueIntoTable(0,i);
+                            }
                             if(response.getInt("count")==1){
                                 JSONArray array=(JSONArray) response.get("results");
                                 JSONObject o=(JSONObject) array.get(0);
@@ -276,15 +258,10 @@ public class HomePage extends Page{
         requestQueue.add(jsonObjectRequest);
     }
     private void enterAllergenValueIntoTable(int value,int allergenId){
-        int k=0;
-        for(int i = 0; i< allergenTypes.length; i++){
-            for(int j = 0; j< allergens[i].length; j++,k++){
-                if(allergens[i][j].id==allergenId){
-                    if(value==0){
-
-                    }
-                    concentrationTextViews[k].setText(value+"");
-                }
+        for(int i=0;i<allergens.length;i++){
+            if(allergens[i].id==allergenId){
+                concentrationTextViews[allergens[i].textViewId].setText(value+"");
+                break;
             }
         }
     }
@@ -318,11 +295,10 @@ public class HomePage extends Page{
 //                      upisati u niz tipova i napraviti prvi niz
 //                        MainActivity.debug.print(response.toString());
                         try {
-                            allergenTypes =new String[response.length()];
-                            allergens =new Allergen[response.length()][];
+                            allergenTypes =new AllergenType[response.length()];
                             for(int i=0;i<response.length();i++){
                                 JSONObject o=(JSONObject)response.get(i);
-                                allergenTypes[i]=o.getString("name");
+                                allergenTypes[i]=new AllergenType(o.getInt("id"),o.getString("name"));
                             }
                             loadAllergens();
                         }catch (Exception e){
@@ -360,22 +336,12 @@ public class HomePage extends Page{
 //                      upisati u matrici alergena
 //                        MainActivity.debug.print(response.toString());
                         try {
-                            LinkedList<Allergen>[] lista=new LinkedList[allergenTypes.length];
-                            for(int i = 0; i< allergenTypes.length; i++){
-                                lista[i]=new LinkedList<>();
-                            }
+                            concentrationTextViews=new TextView[response.length()];
+                            allergens=new Allergen[response.length()];
                             for(int i=0;i<response.length();i++){
-                                JSONObject o=(JSONObject)response.get(i);
-                                int type=o.getInt("type");
-                                lista[type-1].push(new Allergen(o.getInt("id"),o.getString("name"),o.getString("localized_name")));
+                                JSONObject o=(JSONObject) response.get(i);
+                                allergens[i]=new Allergen(o.getInt("id"),o.getInt("type"),o.getString("localized_name"),o.getString("name"));
                             }
-                            for(int i = 0; i< allergens.length; i++){
-                                allergens[i]=new Allergen[lista[i].size()];
-                                for(int j = 0; j< allergens[i].length; j++){
-                                    allergens[i][j]=lista[i].get(j);
-                                }
-                            }
-//                            printAlergens();
                             setTables();
                         }catch (Exception e){
                             MainActivity.debug.print(e.getMessage());
@@ -409,17 +375,6 @@ public class HomePage extends Page{
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
-//                        try {
-//                            for (int i = 0; i < response.length(); i++) {
-//                                JSONObject o=(JSONObject) response.get(i);
-//                                int id=o.getInt("id");
-//                                String name=o.getString("name");
-//                                String description=o.getString("description");
-//                                MainActivity.debug.print(id+" "+name+" "+description);
-//                            }
-//                        }catch (Exception e){
-//                            MainActivity.debug.print("greska pri citanju json");
-//                        }
                         addLocationsToSpinner(response);
                     }
                 },
@@ -457,14 +412,6 @@ public class HomePage extends Page{
             locationsSpinner.setItems(list);
         }catch (Exception e){
             MainActivity.debug.print("greska pri ubacivanju u spinner");
-        }
-    }
-    private void printAlergens(){
-        for(int i = 0; i< allergenTypes.length; i++){
-            MainActivity.debug.print(allergenTypes[i]);
-            for(int j = 0; j< allergens[i].length; j++){
-                MainActivity.debug.print(allergens[i][j].id+" "+ allergens[i][j].name+" "+ allergens[i][j].localName);
-            }
         }
     }
 }

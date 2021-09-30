@@ -3,12 +3,12 @@ package com.uros.koncentracijapolena;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
+import androidx.cardview.widget.CardView;
 import com.android.volley.*;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
@@ -87,6 +87,8 @@ public class HomePage extends Page{
         view.addView(datePicker);
     }
     private void setTables(){
+        CardView cardView=new CardView(context);
+
         infoTable=new TableLayout(context);
         int k=0;
         for(int i=0;i<allergenTypes.length;i++){
@@ -99,8 +101,20 @@ public class HomePage extends Page{
                 }
             }
         }
-        infoTable.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        view.addView(infoTable);
+        LinearLayout.LayoutParams paramsCard=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        ViewGroup.LayoutParams paramsTable=new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        paramsCard.topMargin=30;
+        cardView.setLayoutParams(paramsCard);
+        infoTable.setLayoutParams(paramsTable);
+
+        cardView.setCardBackgroundColor(Color.DKGRAY);
+        cardView.setRadius(10);
+        cardView.setPadding(10,10,10,10);
+
+        infoTable.setPadding(0,25,0,25);
+
+        cardView.addView(infoTable);
+        view.addView(cardView);
     }
     private void setSearchBtn(){
         searchBtn=new Button(context);
@@ -161,10 +175,13 @@ public class HomePage extends Page{
         t3.setTextColor(Color.WHITE);
         t1.setText(text1);
         t2.setText(text2);
+        t2.setGravity(Gravity.CENTER);
         t3.setText(text3);
         tableRow.addView(t1);
         tableRow.addView(t2);
         tableRow.addView(t3);
+        int padding=15;
+        tableRow.setPadding(padding+20,padding,10,padding);
         TableRow.LayoutParams params=new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
         t1.setLayoutParams(params);
         t2.setLayoutParams(params);
@@ -295,7 +312,7 @@ public class HomePage extends Page{
             }
         }
     }
-    //pretraga za interval
+    //petraga za interval
     private void getPollenIdsAtLocationAndInterval(int locationId,String start,String end){
         String url="http://polen.sepa.gov.rs/api/opendata/pollens/";
         url+="?location="+locationId;

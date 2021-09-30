@@ -10,6 +10,8 @@ import com.android.volley.*;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.material.snackbar.BaseTransientBottomBar;
+import com.google.android.material.snackbar.Snackbar;
 import com.jaredrummler.materialspinner.MaterialSpinner;
 import com.uros.koncentracijapolena.tables.Allergen;
 import com.uros.koncentracijapolena.tables.AllergenType;
@@ -31,6 +33,7 @@ public class HomePage extends Page{
     private Button searchBtn;
     private Button reloadBtn;
     private TextView[] concentrationTextViews;
+    private TextView[] changeTextViews;
     private int selectedLocation;
     public HomePage(Context context){
         super(context);
@@ -87,10 +90,10 @@ public class HomePage extends Page{
         infoTable=new TableLayout(context);
         int k=0;
         for(int i=0;i<allergenTypes.length;i++){
-            addTableRow(allergenTypes[i].name,"concentration");
+            addTableRow(allergenTypes[i].name,"concentration","change",-1);
             for(int j=0;j<allergens.length;j++){
                 if(allergens[j].typeId==allergenTypes[i].id){
-                    concentrationTextViews[k]=addTableRow(allergens[j].name,"0");
+                    addTableRow(allergens[j].name,"0","no data",k);
                     allergens[j].textViewId=k;
                     k++;
                 }
@@ -125,27 +128,59 @@ public class HomePage extends Page{
         });
         view.addView(reloadBtn);
     }
-    private TextView addTableRow(String text1,String text2){
+    private void showReloadSnackBar(){
+        Snackbar snackbar=Snackbar.make(view,"Check your connection", BaseTransientBottomBar.LENGTH_INDEFINITE);
+        snackbar.setAction("reload", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                reload();
+            }
+        });
+        snackbar.show();
+    }
+    private void showSearchSnackBar(){
+        Snackbar snackbar=Snackbar.make(view,"Check your connection and try again", BaseTransientBottomBar.LENGTH_INDEFINITE);
+        snackbar.setAction("search", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checkUserInput();
+            }
+        });
+        snackbar.show();
+    }
+    private void showMessageSnackBar(String message){
+        Snackbar.make(view,message,Snackbar.LENGTH_SHORT).show();
+    }
+    private void addTableRow(String text1,String text2,String text3,int k){
         TableRow tableRow=new TableRow(context);
         TextView t1=new TextView(context);
         TextView t2=new TextView(context);
+        TextView t3=new TextView(context);
         t1.setTextColor(Color.WHITE);
         t2.setTextColor(Color.WHITE);
+        t3.setTextColor(Color.WHITE);
         t1.setText(text1);
         t2.setText(text2);
+        t3.setText(text3);
         tableRow.addView(t1);
         tableRow.addView(t2);
+        tableRow.addView(t3);
         TableRow.LayoutParams params=new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
         t1.setLayoutParams(params);
         t2.setLayoutParams(params);
+        t3.setLayoutParams(params);
         infoTable.addView(tableRow);
-        return t2;
+        if(k==-1)return;
+        concentrationTextViews[k]=t2;
+        changeTextViews[k]=t3;
     }
+
 
     //pretraga polena
     public void checkUserInput(){
         if(selectedLocation==-1){
             MainActivity.debug.print("nije selektovan grad");
+            showMessageSnackBar("Select city");
             return;
         }
         int locationId=selectedLocation;
@@ -156,25 +191,27 @@ public class HomePage extends Page{
             day=Integer.parseInt(dayEdit.getText().toString());
             if(year>2100||year<1970||month>12||month<1||day<1||day>31){
                 MainActivity.debug.print("pogresan format");
+                showMessageSnackBar("Wrong date");
                 return;
             }
         }catch (Exception e){
             MainActivity.debug.print("nisu unet pravilan datum");
+            showMessageSnackBar("Enter date first");
             return;
         }
         Date date=new Date(year,month,day);
         date.setTime(date.getTime()+6*24*60*60*1000);
 //        MainActivity.debug.print(date.getYear()+" "+date.getMonth()+" "+date.getDate());
-        getPollenIdAtLocationAndDate(locationId,year,month,day);
         String start=year+"-"+month+"-"+day;
         String end=date.getYear()+"-"+date.getMonth()+"-"+date.getDate();
-        getPollenIdsAtLocationAndInterval(locationId,start,end);
+        getPollenIdAtLocationAndDate(locationId,start,end);
+//        getPollenIdsAtLocationAndInterval(locationId,start,end);
     }
-    private void getPollenIdAtLocationAndDate(int locationId,int year,int month,int day){
+    private void getPollenIdAtLocationAndDate(final int locationId, final String start, final String end){
         String url = "http://polen.sepa.gov.rs/api/opendata/pollens/";
         url+="?location=";
         url+=locationId;
-        url=url+"&date="+year+"-"+month+"-"+day;
+        url=url+"&date="+start;
         for(int i=0;i<allergens.length;i++){
             enterAllergenValueIntoTable(0,i);
         }
@@ -186,11 +223,13 @@ public class HomePage extends Page{
                         JSONArray array=(JSONArray) response.get("results");
                         JSONObject o=(JSONObject) array.get(0);
                         int id=o.getInt("id");
-                        getConcentrationAtPollenId(id);
+                        getConcentrationAtPollenId(id,locationId,start,end);
                     }else{
+                        showMessageSnackBar("No data on that day :(");
                         MainActivity.debug.print("nema nijednog polena tog dana");
                     }
                 }catch (Exception e){
+//                    showSearchSnackBar();
                     MainActivity.debug.print(e.getMessage());
                     MainActivity.debug.print("Error parsing json getPollenAtLocationAndDate");
                 }
@@ -198,13 +237,14 @@ public class HomePage extends Page{
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                showSearchSnackBar();
                 MainActivity.debug.print(error.getMessage());
                 MainActivity.debug.print("Error getPollenAtLocationAndDate");
             }
         });
         requestQueue.add(request);
     }
-    private void getConcentrationAtPollenId(int pollenId){
+    private void getConcentrationAtPollenId(int pollenId, final int locationId, final String start, final String end){
         String url = "http://polen.sepa.gov.rs/api/opendata/concentrations/";
         url=url+"?pollen="+pollenId;
         CustomObjectRequest request=new CustomObjectRequest(url, new Response.Listener<JSONObject>() {
@@ -218,6 +258,7 @@ public class HomePage extends Page{
                         int allergenId=array.getJSONObject(i).getInt("allergen");
                         enterAllergenValueIntoTable(value,allergenId);
                     }
+                    getPollenIdsAtLocationAndInterval(locationId,start,end);
                 }catch (Exception e){
                     MainActivity.debug.print(e.getMessage());
                     MainActivity.debug.print("Error parsing json getConcentrationsAtId");
@@ -226,6 +267,7 @@ public class HomePage extends Page{
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                showSearchSnackBar();
                 MainActivity.debug.print(error.getMessage());
                 MainActivity.debug.print("Error getConcentrationAtPollenId");
             }
@@ -236,6 +278,19 @@ public class HomePage extends Page{
         for(int i=0;i<allergens.length;i++){
             if(allergens[i].id==allergenId){
                 concentrationTextViews[allergens[i].textViewId].setText(value+"");
+                changeTextViews[allergens[i].textViewId].setText("no data");
+                break;
+            }
+        }
+    }
+    private void updateConcentrationChange(int value,int allergenId){
+        for(int i=0;i<allergens.length;i++){
+            if(allergens[i].id==allergenId){
+                int textViewId=allergens[i].textViewId;
+                int v=Integer.parseInt(concentrationTextViews[textViewId].getText().toString());
+                if(value>v)changeTextViews[textViewId].setText("raste");
+                if(value==v)changeTextViews[textViewId].setText("miruje");
+                if(value<v)changeTextViews[textViewId].setText("opada");
                 break;
             }
         }
@@ -266,6 +321,7 @@ public class HomePage extends Page{
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                showSearchSnackBar();
                 MainActivity.debug.print(error.getMessage());
                 MainActivity.debug.print("Error getpollenIdsAtInterval");
             }
@@ -281,10 +337,24 @@ public class HomePage extends Page{
         CustomObjectRequest request=new CustomObjectRequest(url, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-                MainActivity.debug.print(response.toString());
-                //nacrtati grafik sa
                 try {
                     JSONArray array = response.getJSONArray("results");
+                    int p=0,n=0;
+                    for(int i=0;i<array.length();i++){
+                        p+=array.getJSONObject(i).getInt("value");
+                        n++;
+                        int a1=array.getJSONObject(i).getInt("allergen");
+                        if(i+1>=array.length()){
+                            updateConcentrationChange(p/n,a1);
+                            break;
+                        }
+                        int a2=array.getJSONObject(i+1).getInt("allergen");
+                        if(a1!=a2){
+                            updateConcentrationChange(p/n,a1);
+                            p=0;
+                            n=0;
+                        }
+                    }
                 }catch (Exception e){
                     MainActivity.debug.print("Error parsing json getConcentrationsAtPollenIds");
                 }
@@ -292,6 +362,7 @@ public class HomePage extends Page{
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                showSearchSnackBar();
                 MainActivity.debug.print(error.getMessage());
                 MainActivity.debug.print("Error getConcentrationsAtPollenIds");
             }
@@ -299,6 +370,7 @@ public class HomePage extends Page{
         requestQueue.add(request);
     }
 
+    //reload
     private void reload(){
         view.removeAllViews();
 //        view.setBackgroundColor(Color.GREEN);
@@ -342,6 +414,7 @@ public class HomePage extends Page{
             public void onErrorResponse(VolleyError error) {
                 MainActivity.debug.print(error.getMessage());
                 MainActivity.debug.print("Error loading alergenTypes");
+//                showReloadSnackBar();
             }
         });
         requestQueue.add(request);
@@ -354,6 +427,7 @@ public class HomePage extends Page{
             public void onResponse(JSONArray response) {
                 try {
                     concentrationTextViews=new TextView[response.length()];
+                    changeTextViews=new TextView[response.length()];
                     allergens=new Allergen[response.length()];
                     for(int i=0;i<response.length();i++){
                         JSONObject o=(JSONObject) response.get(i);
@@ -370,6 +444,7 @@ public class HomePage extends Page{
             public void onErrorResponse(VolleyError error) {
                 MainActivity.debug.print(error.getMessage());
                 MainActivity.debug.print("Error LoadAllergens");
+                showReloadSnackBar();
             }
         });
         requestQueue.add(request);
@@ -386,6 +461,7 @@ public class HomePage extends Page{
             public void onErrorResponse(VolleyError error) {
                 MainActivity.debug.print(error.getMessage());
                 MainActivity.debug.print("Error LoadLocations");
+                showReloadSnackBar();
             }
         });
         requestQueue.add(request);
